@@ -57,7 +57,8 @@ defmodule GildedRoseTest do
     test "'Aged Brie' increases in value until sell by date has passed" do
       bries =
         update_quality([
-          %Item{name: "Aged Brie", sell_in: 10, quality: 2}
+          %Item{name: "Aged Brie", sell_in: 10, quality: 2},
+          %Item{name: "Aged Brie", sell_in: 1, quality: 2}
         ])
 
       assert Enum.all?(bries, & &1.quality == 3)

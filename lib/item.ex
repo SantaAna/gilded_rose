@@ -11,19 +11,19 @@ defmodule Item do
   @min_quality 0
 
   @type t :: %@m{
-    name: String.t() | nil,
-    sell_in: integer | nil,
-    quality: integer | nil
-  }
+          name: String.t() | nil,
+          sell_in: integer | nil,
+          quality: integer | nil
+        }
 
   @doc """
   updates the age of an item.
   """
-  @spec age(@m.t()) :: @m.t() 
+  @spec age(@m.t()) :: @m.t()
   defp age(%@m{} = item) do
     Map.update!(item, :sell_in, &(&1 - 1))
   end
-  
+
   @doc """
   Adds quality to an item, the value of an item will
   never exceed the max value in the @max_quality module
@@ -33,7 +33,7 @@ defmodule Item do
   defp add_quality(current, addition) do
     min(current + addition, @max_quality)
   end
-  
+
   @doc """
   Subtracs quality from an item, quality will never
   go below @min_quality attribute.
@@ -42,7 +42,35 @@ defmodule Item do
   defp subtract_quality(current, decrement) do
     max(current - decrement, @min_quality)
   end
-  
+ 
+  @doc """
+  Degrades the quality of a conjured item.
+  """
+  @spec degrade_conjured_item(@m.t()) :: @m.t()
+  defp degrade_conjured_item(item) do
+    Map.update!(item, :quality, fn quality ->
+      if item.sell_in <= 0 do
+        subtract_quality(quality, 4)
+      else
+        subtract_quality(quality, 2)
+      end
+    end)
+  end
+
+  @doc """
+  Degrades the quality of a standard item.
+  """
+  @spec degrade_normal_item(@m.t()) :: @m.t()
+  defp degrade_normal_item(item) do
+    Map.update!(item, :quality, fn quality ->
+      if item.sell_in <= 0 do
+        subtract_quality(quality, 2)
+      else
+        subtract_quality(quality, 1)
+      end
+    end)
+  end
+
   @doc """
   # Summary
   Updates the age and quality of either a list of items or a single item. 
@@ -88,19 +116,19 @@ defmodule Item do
   end
 
   def update_quality(%@m{name: name} = item) when name not in @special_items do
-    Map.update!(item, :quality, fn quality -> 
-      if item.sell_in <= 0 do
-        subtract_quality(quality, 2)
-      else
-        subtract_quality(quality, 1)
-      end
-    end)
-    |> age()
+    if String.contains?(name, "Conjured") do
+      degrade_conjured_item(item)
+      |> age()
+    else
+      degrade_normal_item(item)
+      |> age()
+    end
   end
 
+
   def update_quality(%@m{name: "Aged Brie"} = item) do
-    Map.update!(item, :quality, fn quality -> 
-      if item.sell_in <= 0 do 
+    Map.update!(item, :quality, fn quality ->
+      if item.sell_in <= 0 do
         add_quality(quality, 2)
       else
         add_quality(quality, 1)
@@ -114,7 +142,7 @@ defmodule Item do
       cond do
         item.sell_in in 10..6 -> add_quality(quality, 2)
         item.sell_in in 5..1 -> add_quality(quality, 3)
-        item.sell_in > 10 -> add_quality(quality , 1)
+        item.sell_in > 10 -> add_quality(quality, 1)
         true -> 0
       end
     end)

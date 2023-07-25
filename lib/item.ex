@@ -17,58 +17,22 @@ defmodule Item do
         }
 
   @doc """
-  updates the age of an item.
+  Updates a list of items by apllying the update item function to each.
   """
-  @spec age(@m.t()) :: @m.t()
-  defp age(%@m{} = item) do
-    Map.update!(item, :sell_in, &(&1 - 1))
+  @spec update_quality(list(t())) :: list(t())
+  def update_quality(item_list) do
+    Enum.map(item_list, &update_item/1)
   end
 
   @doc """
-  Adds quality to an item, the value of an item will
-  never exceed the max value in the @max_quality module
-  attribute.
+  Updates an item by first updating its qualtiy and then updating its sell
+  in value.
   """
-  @spec add_quality(integer, integer) :: integer
-  defp add_quality(current, addition) do
-    min(current + addition, @max_quality)
-  end
-
-  @doc """
-  Subtracs quality from an item, quality will never
-  go below @min_quality attribute.
-  """
-  @spec subtract_quality(integer, integer) :: integer
-  defp subtract_quality(current, decrement) do
-    max(current - decrement, @min_quality)
-  end
- 
-  @doc """
-  Degrades the quality of a conjured item.
-  """
-  @spec degrade_conjured_item(@m.t()) :: @m.t()
-  defp degrade_conjured_item(item) do
-    Map.update!(item, :quality, fn quality ->
-      if item.sell_in <= 0 do
-        subtract_quality(quality, 4)
-      else
-        subtract_quality(quality, 2)
-      end
-    end)
-  end
-
-  @doc """
-  Degrades the quality of a standard item.
-  """
-  @spec degrade_normal_item(@m.t()) :: @m.t()
-  defp degrade_normal_item(item) do
-    Map.update!(item, :quality, fn quality ->
-      if item.sell_in <= 0 do
-        subtract_quality(quality, 2)
-      else
-        subtract_quality(quality, 1)
-      end
-    end)
+  @spec update_item(t()) :: t()
+  def update_item(%@m{} = item) do
+    item
+    |> update_item_quality()
+    |> decrease_sell_in()
   end
 
   @doc """
@@ -86,6 +50,9 @@ defmodule Item do
   1. If the sell_in value is greater than 0, quality is decremented by 1. 
      if sell_in is less than or equal to zero then it is decremented by 2.
   2. sell_in value is decremented by age() function
+
+  ## Conjured Item      
+  Same as normal item except quality degrades twice as fast.
 
   ## Aged Brie
   Aged Brie will increase in value by 1 until its expiration date, after which
@@ -110,23 +77,16 @@ defmodule Item do
   ## Sulfuras
   This item will always have value of 80, only its sell_in will be decremented.
   """
-  @spec update_quality(list(@m.t()) | @m.t()) :: list(@m.t()) | @m.t()
-  def update_quality(item_list) when is_list(item_list) do
-    Enum.map(item_list, &update_quality/1)
-  end
-
-  def update_quality(%@m{name: name} = item) when name not in @special_items do
+  @spec update_item_quality(t()) :: t()
+  def update_item_quality(%@m{name: name} = item) when name not in @special_items do
     if String.contains?(name, "Conjured") do
       degrade_conjured_item(item)
-      |> age()
     else
       degrade_normal_item(item)
-      |> age()
     end
   end
 
-
-  def update_quality(%@m{name: "Aged Brie"} = item) do
+  def update_item_quality(%@m{name: "Aged Brie"} = item) do
     Map.update!(item, :quality, fn quality ->
       if item.sell_in <= 0 do
         add_quality(quality, 2)
@@ -134,10 +94,9 @@ defmodule Item do
         add_quality(quality, 1)
       end
     end)
-    |> age()
   end
 
-  def update_quality(%@m{name: "Backstage passes to a TAFKAL80ETC concert"} = item) do
+  def update_item_quality(%@m{name: "Backstage passes to a TAFKAL80ETC concert"} = item) do
     Map.update!(item, :quality, fn quality ->
       cond do
         item.sell_in in 10..6 -> add_quality(quality, 2)
@@ -146,10 +105,54 @@ defmodule Item do
         true -> 0
       end
     end)
-    |> age()
   end
 
-  def update_quality(%@m{name: "Sulfuras, Hand of Ragnaros"} = item) do
-    age(item)
+  def update_item_quality(%@m{name: "Sulfuras, Hand of Ragnaros"} = item) do
+    item
+  end
+
+  # updates the age of an item.
+  @spec decrease_sell_in(t()) :: t()
+  defp decrease_sell_in(%@m{} = item) do
+    Map.update!(item, :sell_in, &(&1 - 1))
+  end
+
+  # Adds quality to an item, the value of an item will
+  # never exceed the max value in the @max_quality module
+  # attribute.
+  @spec add_quality(integer, integer) :: integer
+  defp add_quality(current, addition) do
+    min(current + addition, @max_quality)
+  end
+
+  # Subtracs quality from an item, quality will never
+  # go below @min_quality attribute.
+  @spec subtract_quality(integer, integer) :: integer
+  defp subtract_quality(current, decrement) do
+    max(current - decrement, @min_quality)
+  end
+
+  # Degrades the quality of a conjured item.
+  @spec degrade_conjured_item(@m.t()) :: @m.t()
+  defp degrade_conjured_item(item) do
+    Map.update!(item, :quality, fn quality ->
+      if item.sell_in <= 0 do
+        subtract_quality(quality, 4)
+      else
+        subtract_quality(quality, 2)
+      end
+    end)
+  end
+
+  # Degrades the quality of a standard item.
+  @spec degrade_normal_item(@m.t()) :: @m.t()
+  defp degrade_normal_item(item) do
+    Map.update!(item, :quality, fn quality ->
+      if item.sell_in <= 0 do
+        subtract_quality(quality, 2)
+      else
+        subtract_quality(quality, 1)
+      end
+    end)
   end
 end

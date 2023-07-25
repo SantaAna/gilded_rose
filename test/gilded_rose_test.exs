@@ -171,7 +171,8 @@ defmodule GildedRoseTest do
         update_quality([
           %Item{name: "Backstage passes to a TAFKAL80ETC concert", sell_in: 5, quality: 50},
           %Item{name: "Backstage passes to a TAFKAL80ETC concert", sell_in: 20, quality: 50},
-          %Item{name: "Backstage passes to a TAFKAL80ETC concert", sell_in: 1, quality: 50}
+          %Item{name: "Backstage passes to a TAFKAL80ETC concert", sell_in: 1, quality: 50},
+          %Item{name: "Backstage passes to a TAFKAL80ETC concert", sell_in: 10, quality: 50}
         ])
 
       assert Enum.all?(passes, &(&1.quality == 50))
